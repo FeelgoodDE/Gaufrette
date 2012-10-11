@@ -1,5 +1,5 @@
 {
-    "name":         "knplabs/gaufrette",
+    "name":         "icans/gaufrette",
     "type":         "library",
     "description":  "PHP5 library that provides a filesystem abstraction layer",
     "keywords":     ["file", "filesystem", "media", "abstraction"],
@@ -42,6 +42,9 @@
         "ext-curl":                     "*",
         "ext-mbstring":                 "*",
         "ext-mongo":                    "*"
+    },
+    "replace": {
+        "knplabs/gaufrette": "self.version"
     },
     "autoload": {
         "psr-0": { "Gaufrette": "src/" }

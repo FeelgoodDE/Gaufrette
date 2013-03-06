@@ -139,14 +139,6 @@ class GridFS extends Base
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function createFile($key, Filesystem $filesystem)
-    {
-        return $this->get($key, $filesystem);
-    }
-
-    /**
      * {@InheritDoc}
      */
     public function exists($key)

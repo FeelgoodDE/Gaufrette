@@ -48,9 +48,13 @@ class ReadThroughToFallback extends Base
         if ($this->main->exists('/' . $key)) {
             return $this->main->read('/' . $key);
         } else {
-            $content = $this->readThrough->read($key);
-            $this->main->write('/' . $key, $content);
-            return $content;
+            if (!$this->main->exists('/%deleted%/' . $key)) {
+                $content = $this->readThrough->read($key);
+                $this->main->write('/' . $key, $content);
+                return $content;
+            }
+
+            throw new \RuntimeException(sprintf('Could not read the \'%s\' file.', $key));
         }
     }
 
@@ -76,6 +80,7 @@ class ReadThroughToFallback extends Base
     public function write($key, $content, array $metadata = null)
     {
         $this->main->write('/' . $key, $content);
+        $this->main->delete('/%deleted%/' . $key);
     }
 
     /**
@@ -83,11 +88,16 @@ class ReadThroughToFallback extends Base
      */
     public function exists($key)
     {
-        try {
-            return $this->main->exists('/' . $key);
-        } catch (\Exception $exception) {
-            return $this->readThrough->exists($key);
+        $existsLocally = $this->main->exists('/' . $key);
+        if (!$existsLocally) {
+            $deletedLocally = $this->main->exists('/%deleted%/' . $key); // check if file was explicitly deleted or if we fall through to read
+
+            if (!$deletedLocally) {
+                return $this->readThrough->exists($key);  // fall through to file to read
+            }
         }
+
+        return $existsLocally;
     }
 
     /**
@@ -111,7 +121,21 @@ class ReadThroughToFallback extends Base
      */
     public function keys($prefix = null)
     {
-        throw new \BadMethodCallException("keys() not implemented for this special adapter, yet.");
+        $localKeys = $this->main->keys('/' . $prefix);
+        $remoteKeys = $this->readThrough->keys($prefix);
+
+        $returnKeys = array();
+        foreach ($localKeys as $localKey) {
+            $returnKeys[] = ltrim($localKey, '/');
+        }
+
+        foreach ($remoteKeys as $remoteKey) {
+            if (!$this->main->exists('/%deleted%/' . $remoteKey)) {
+                $returnKeys[] = $remoteKey;
+            }
+        }
+
+        return $returnKeys;
     }
 
     /**
@@ -138,7 +162,8 @@ class ReadThroughToFallback extends Base
      */
     public function delete($key)
     {
-        throw new \BadMethodCallException("delete() not implemented for this special adapter, yet.");
+        $this->main->write('/%deleted%/' . $key, 'deleted');
+        $this->main->delete('/' . $key);
     }
 
     /**

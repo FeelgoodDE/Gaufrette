@@ -209,17 +209,23 @@ class AmazonS3 extends Base
 	    if (null !== $prefix) {
 	        $options['prefix'] = $prefix;
 	    }
-        $options['max-keys'] = "100000";
-        
-        $response = $this->service->list_objects($this->bucket, $options);
-        if (!$response->isOK()) {
-            throw new \RuntimeException('Could not get the keys.');
-        }
 
+        $lastKey = null;
         $keys = array();
-        foreach ($response->body->Contents as $object) {
-            $keys[] = $object->Key->to_string();
-        }
+        do {
+           if (!empty($lastKey)) {
+               $options['marker'] = $lastKey;
+           }
+            $response = $this->service->list_objects($this->bucket, $options);
+            if (!$response->isOK()) {
+                throw new \RuntimeException('Could not get the keys.');
+            }
+
+            foreach ($response->body->Contents as $object) {
+                $keys[] = $object->Key->to_string();
+            }
+            $lastKey = $object->Key->to_string();
+        } while ('true' == $response->body->IsTruncated);
 
         return $keys;
     }

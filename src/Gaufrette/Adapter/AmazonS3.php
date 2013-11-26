@@ -208,6 +208,7 @@ class AmazonS3 extends Base
 		$options = array();
 	    if (null !== $prefix) {
 	        $options['prefix'] = $prefix;
+	        $options['max-keys'] = "100000";
 	    }
         $response = $this->service->list_objects($this->bucket, $options);
         if (!$response->isOK()) {

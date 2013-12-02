@@ -221,10 +221,13 @@ class AmazonS3 extends Base
                 throw new \RuntimeException('Could not get the keys.');
             }
 
+            $object = null;
             foreach ($response->body->Contents as $object) {
                 $keys[] = $object->Key->to_string();
             }
-            $lastKey = $object->Key->to_string();
+            if (!empty($object)) {
+                $lastKey = $object->Key->to_string();
+            }
         } while ('true' == $response->body->IsTruncated);
 
         return $keys;
